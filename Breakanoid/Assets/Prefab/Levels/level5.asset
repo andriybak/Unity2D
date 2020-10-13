@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ecbbbbcb53839a74fb932d84d59be5a1, type: 3}
+  m_Name: level5
+  m_EditorClassIdentifier: 
+  levelPrefab: {fileID: 8916984625466389896, guid: 3fd2345de3d799f4bb861629aa55ad6f,
+    type: 3}
+  paddleSprite: {fileID: 21300000, guid: 7805b1b370012d543abec96be0096fc8, type: 3}
+  levelBackground: {fileID: 21300000, guid: 5fa30c7b6d648a64f960e1523a2886f1, type: 3}
