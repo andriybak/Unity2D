@@ -4,43 +4,54 @@ using UnityEngine;
 
 public class EnemySpawnerController : MonoBehaviour
 {
-    [SerializeField] EnemySpawnerConfiguration SpawnConfig;
+    [SerializeField] List<EnemySpawnerConfiguration> SpawnConfigList;
+    [SerializeField] List<GameObject> PowerUps;
 
-    private List<Vector2> enemyPath;
-
-    private IEnumerator SpawnWave()
+    private IEnumerator SpawnWave(EnemySpawnerConfiguration spawnConfig)
     {
-        for (int ii = 0; ii < SpawnConfig.NumberOfEnemySpawns; ii++)
+        var enemyPowerUpIndex = Random.Range(0, spawnConfig.NumberOfEnemySpawns);
+
+        for (int ii = 0; ii < spawnConfig.NumberOfEnemySpawns; ii++)
         {
-            var enemy = SpawnConfig.EnemyObject;
+            var enemy = spawnConfig.EnemyObject;
             var enemyController = enemy.GetComponent<EnemyController>();
             if (enemyController != null)
             {
-                enemyController.SetPath(this.enemyPath);
+                enemyController.SetPath(spawnConfig.GetPathPoints());
             }
 
-            Instantiate(enemy, Vector2.zero, Quaternion.identity);
+            var enemyObject = Instantiate(enemy, Vector2.zero, Quaternion.identity);
+            if (ii == enemyPowerUpIndex)
+            {
+                var randomPowerUp = Random.Range(0, this.PowerUps.Count);
+                enemy.GetComponent<EnemyController>().powerUp = this.PowerUps[randomPowerUp];
+            }
 
-            yield return new WaitForSeconds(SpawnConfig.SpawnDelaySeconds);
+            yield return new WaitForSeconds(spawnConfig.SpawnDelaySeconds);
+        }
+    }
+
+    private IEnumerator StartSpawnLoop()
+    {
+        while (true)
+        {
+            foreach (var wave in this.SpawnConfigList)
+            {
+                StartCoroutine(SpawnWave(wave));
+                yield return new WaitForSeconds(1);
+            }
         }
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        if (SpawnConfig == null)
+        if (this.SpawnConfigList == null || this.PowerUps == null)
         {
             Destroy(this.gameObject);
+            return;
         }
 
-        this.enemyPath = this.SpawnConfig.GetPathPoints();
-
-        StartCoroutine(SpawnWave());
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        StartCoroutine(StartSpawnLoop());
     }
 }

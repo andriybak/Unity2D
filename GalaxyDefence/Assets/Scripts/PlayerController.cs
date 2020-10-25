@@ -3,13 +3,27 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum PlayerFireLevel
+{
+    One = 0,
+    Two,
+    Four,
+    Six
+}
+
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] public GameObject PlayerLaser;
-    [SerializeField] public float LaserSpeed = 5f;
     [SerializeField] public int PlayerMaxHealth = 100;
     [SerializeField] public GameObject DeathAnimation;
     [SerializeField] Text gameOverText;
+
+    [SerializeField] public GameObject PlayerLaser;
+    [SerializeField] public float LaserSpeed = 5f;
+    [SerializeField] public float PlayerFireDelay = 0.3f;
+
+    [SerializeField] GameObject ShieldPrefab;
+    [SerializeField] float ShieldDuration = 5f;
+    private GameObject activeShield = null;
 
     private float screenRatioWidth = 9f;
     private float screenRatioHeight = 16f;
@@ -29,12 +43,22 @@ public class PlayerController : MonoBehaviour
 
     private int currentPlayerHealth = 0;
 
+    private PlayerFireLevel gunFireLevel = PlayerFireLevel.One;
+
+    private PlayerHealthController playerHealthText;
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.gameObject.tag == "EnemyLaser" || collision.gameObject.tag == "Enemy")
         {
+            if (this.playerHealthText != null)
+            {
+                this.playerHealthText.DecreaseHealth(20);
+                this.currentPlayerHealth = this.playerHealthText.currentHealth;
+            }
+
             //need collision sound here
-            this.currentPlayerHealth -= 20;
+
             Destroy(collision.gameObject);
             this.CheckHealth();
         }
@@ -61,20 +85,84 @@ public class PlayerController : MonoBehaviour
         posY = Mathf.Clamp(posY, this.minY, this.maxY);
 
         this.gameObject.transform.position = new Vector3(posX, posY, 0f);
+
+        if (this.activeShield != null)
+        {
+            this.activeShield.transform.position = this.gameObject.transform.position;
+        }
+    }
+
+    private void CreateLevelTwoLasers(Vector3 playerPos)
+    {
+        Vector3 shiftfVector = new Vector3(0.3f, 0f, 0f);
+        var laser = Instantiate(this.PlayerLaser, playerPos - shiftfVector, this.transform.rotation);
+        laser.GetComponent<Rigidbody2D>().velocity = new Vector2(0f, LaserSpeed);
+
+        laser = Instantiate(this.PlayerLaser, playerPos + shiftfVector, transform.rotation);
+        laser.GetComponent<Rigidbody2D>().velocity = new Vector2(0f, LaserSpeed);
+    }
+
+    private void CreateLevelFourLaser(Vector3 playerPos)
+    {
+        CreateLevelTwoLasers(playerPos);
+
+        var shiftfVector = new Vector3(0.5f, 0f, 0f);
+        var laser = Instantiate(this.PlayerLaser, playerPos - shiftfVector, this.transform.rotation);
+        laser.GetComponent<Rigidbody2D>().velocity = new Vector2(0f, LaserSpeed);
+
+        laser = Instantiate(this.PlayerLaser, playerPos + shiftfVector, this.transform.rotation);
+        laser.GetComponent<Rigidbody2D>().velocity = new Vector2(0f, LaserSpeed);
+    }
+
+    private void CreateLevelSixLaser(Vector3 playerPos)
+    {
+        CreateLevelFourLaser(playerPos);
+
+        var shiftfVector = new Vector3(0.55f, 0f, 0f);
+        var laser = Instantiate(this.PlayerLaser, playerPos - shiftfVector, this.transform.rotation);
+        laser.GetComponent<Rigidbody2D>().velocity = new Vector2(-LaserSpeed, LaserSpeed);
+
+        laser = Instantiate(this.PlayerLaser, playerPos + shiftfVector, this.transform.rotation);
+        laser.GetComponent<Rigidbody2D>().velocity = new Vector2(LaserSpeed, LaserSpeed);
     }
 
     private IEnumerator PlayerFire()
     {
         while (true)
         {
-            var laser = Instantiate(this.PlayerLaser, transform.position, transform.rotation);
-            laser.GetComponent<Rigidbody2D>().velocity = new Vector2(0f, LaserSpeed);
+            switch (this.gunFireLevel)
+            {
+                case PlayerFireLevel.One:
+                    {
+                        var laser = Instantiate(this.PlayerLaser, transform.position, transform.rotation);
+                        laser.GetComponent<Rigidbody2D>().velocity = new Vector2(0f, LaserSpeed);
+                        break;
+                    }
+                case PlayerFireLevel.Two:
+                    {
+                        this.CreateLevelTwoLasers(this.transform.position);
+                        break;
+                    }
+                case PlayerFireLevel.Four:
+                    {
+                        this.CreateLevelFourLaser(this.transform.position);
+                        break;
+                    }
+                case PlayerFireLevel.Six:
+                    {
+                        this.CreateLevelSixLaser(this.transform.position);
+                        break;
+                    }
+                default:
+                    break;
+            }
+
             if (this.fireSound != null)
             {
                 AudioSource.PlayClipAtPoint(this.fireSound.clip, this.transform.position, 0.4f);
             }
 
-            yield return new WaitForSeconds(0.3f);
+            yield return new WaitForSeconds(PlayerFireDelay);
         }
     }
 
@@ -119,8 +207,12 @@ public class PlayerController : MonoBehaviour
             this.gameOverText.gameObject.SetActive(false);
         }
 
-        this.PlayerMaxHealth = 100;
+        this.playerHealthText = FindObjectOfType<PlayerHealthController>();
         this.currentPlayerHealth = this.PlayerMaxHealth;
+        if (this.playerHealthText != null)
+        {
+            this.playerHealthText.SetHealth(this.PlayerMaxHealth);
+        }
 
         this.playerSprite = this.GetComponent<SpriteRenderer>();
         var spriteRect = this.playerSprite.sprite.rect;
@@ -136,6 +228,8 @@ public class PlayerController : MonoBehaviour
         InitializeBoundaries();
 
         this.fireSound = this.GetComponent<AudioSource>();
+
+        SetUpShield();
     }
 
     // Update is called once per frame
@@ -143,5 +237,49 @@ public class PlayerController : MonoBehaviour
     {
         Move();
         Fire();
+    }
+
+    public void SetFullHp()
+    {
+        this.currentPlayerHealth = this.PlayerMaxHealth;
+        if (this.playerHealthText != null)
+        {
+            this.playerHealthText.SetHealth(this.PlayerMaxHealth);
+        }
+    }
+
+    public void LvlUpGuns()
+    {
+        if (this.gunFireLevel != PlayerFireLevel.Six)
+        {
+            this.gunFireLevel++;
+        }
+    }
+
+    private IEnumerator ActivateShieldCoroutine()
+    {
+        this.activeShield = Instantiate(this.ShieldPrefab, this.transform.position, this.transform.rotation);
+
+        yield return new WaitForSeconds(this.ShieldDuration);
+
+        Destroy(this.activeShield);
+        this.activeShield = null;
+    }
+
+    public void SetUpShield()
+    {
+        if (this.ShieldPrefab != null)
+        {
+            StartCoroutine(this.ActivateShieldCoroutine());
+        }
+    }
+
+    public void SpeedUpFire()
+    {
+        this.LaserSpeed += this.LaserSpeed * 0.5f;
+        this.LaserSpeed = Mathf.Clamp(this.LaserSpeed, 1f, 15f);
+
+        this.PlayerFireDelay -= 0.05f;
+        this.PlayerFireDelay = Mathf.Clamp(this.PlayerFireDelay, 0.05f, 0.3f);
     }
 }

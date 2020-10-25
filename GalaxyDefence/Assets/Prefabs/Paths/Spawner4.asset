@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8209f66640ab4144c9607df3bfe9deec, type: 3}
+  m_Name: Spawner4
+  m_EditorClassIdentifier: 
+  PathWithPointList: {fileID: 8764653586580195096, guid: 97020f0906e66b743bc1288de6b85811,
+    type: 3}
+  EnemyObject: {fileID: 2715368120782033207, guid: 513ceceda2e297e4a9eb239c078e5079,
+    type: 3}
+  SpawnDelaySeconds: 4
+  NumberOfEnemySpawns: 3

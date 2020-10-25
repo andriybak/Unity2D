@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public class EnemyController : MonoBehaviour
@@ -12,12 +13,29 @@ public class EnemyController : MonoBehaviour
     [SerializeField] float FireDelayRandomize = 0.3f;
     [SerializeField] float MovementSpeedPerFrame = 4f;
     [SerializeField] GameObject ExplosionAnimation;
+    [SerializeField] int ScoreForKill = 100;
 
     public List<Vector2> EnemyPath;
+    public GameObject powerUp = null;
 
     private int numberOfCollisions = 0;
     private int nextPathIndex = 0;
     private AudioSource enemyDeathSound = null;
+    private GameScoreController gameScoreController = null;
+
+    private void AddGameScore()
+    {
+        if (this.gameScoreController != null)
+        {
+            this.gameScoreController.AddScore(this.ScoreForKill);
+        }
+    }
+
+    private void SpawnPowerUp()
+    {
+        var powerUp = Instantiate(this.powerUp, transform.position, transform.rotation);
+        powerUp.GetComponent<Rigidbody2D>().velocity = new Vector2(0f, -7f);
+    }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -37,6 +55,12 @@ public class EnemyController : MonoBehaviour
                     Destroy(animation, 0.3f);
                 }
 
+                if (this.powerUp != null)
+                {
+                    this.SpawnPowerUp();
+                }
+
+                this.AddGameScore();
                 Destroy(this.gameObject);
             }
 
@@ -101,6 +125,8 @@ public class EnemyController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        this.gameScoreController = FindObjectOfType<GameScoreController>();
+
         this.numberOfCollisions = 0;
         if (this.EnemyPath.Count > 0)
         {
